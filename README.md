@@ -33,6 +33,55 @@ The root `render.yaml` is a Render Blueprint for the API. In Render:
 
 The Render URL should return `{"ok":true}`. `/fields` is protected and should return HTTP 401 without the `x-api-key` header.
 
+## Internal API
+
+Other internal software should call the Render service directly, not the Vercel browser proxy. Keep `API_KEY` in that software's server-side secret store and send it in the `x-api-key` header.
+
+The versioned API is available at:
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/health` | Service health check; no key required |
+| `GET` | `/api/v1/fields` | Form field, module, and optional-slide metadata |
+| `POST` | `/api/v1/proposals` | Create a Google Slides proposal |
+| `GET` | `/api/v1/proposals/{id}/pdf` | Export a generated proposal as PDF |
+
+FastAPI publishes interactive documentation at `https://YOUR-RENDER-SERVICE.onrender.com/docs` and the machine-readable contract at `https://YOUR-RENDER-SERVICE.onrender.com/openapi.json`.
+
+Create a proposal with a JSON body like this:
+
+```json
+{
+   "fields": {
+      "client_name": "Example Bank",
+      "headline": "A stronger compliance operating model",
+      "client_code": "EXB"
+   },
+   "modules": ["regcomply", "aml"],
+   "dropSlides": [16, 18]
+}
+```
+
+Example request and response:
+
+```powershell
+$body = '{"fields":{"client_name":"Example Bank","headline":"A stronger compliance operating model","client_code":"EXB"},"modules":["regcomply","aml"],"dropSlides":[16,18]}'
+curl.exe -X POST `
+   -H "x-api-key: YOUR_API_KEY" `
+   -H "content-type: application/json" `
+   -d $body `
+   https://YOUR-RENDER-SERVICE.onrender.com/api/v1/proposals
+```
+
+```json
+{
+   "id": "google-presentation-file-id",
+   "editUrl": "https://docs.google.com/presentation/d/.../edit"
+}
+```
+
+The older `/fields`, `/generate`, and `/pdf/{id}` paths remain available for compatibility, but new integrations should use `/api/v1`.
+
 ## Deploy the Vercel UI
 
 1. Import the same repository into Vercel.

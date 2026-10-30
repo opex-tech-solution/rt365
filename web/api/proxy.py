@@ -17,9 +17,9 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         q = parse_qs(urlparse(self.path).query); op = q.get("op", [""])[0]
-        if op == "fields": return self._go("/fields")
-        if op == "pdf" and re.fullmatch(r"[\w-]+", q.get("id", [""])[0]): return self._go("/pdf/" + q["id"][0])
+        if op == "fields": return self._go("/api/v1/fields")
+        if op == "pdf" and re.fullmatch(r"[\w-]+", q.get("id", [""])[0]): return self._go("/api/v1/proposals/" + q["id"][0] + "/pdf")
         self.send_error(404)
 
     def do_POST(self):
-        self._go("/generate", self.rfile.read(int(self.headers.get("content-length", 0))))
+        self._go("/api/v1/proposals", self.rfile.read(int(self.headers.get("content-length", 0))))
