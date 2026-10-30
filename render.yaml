@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: rt365py-render
+    runtime: python
+    rootDir: render-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GOOGLE_SA_JSON
+        sync: false
+      - key: TEMPLATE_ID
+        sync: false
+      - key: OUTPUT_FOLDER_ID
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.12.3

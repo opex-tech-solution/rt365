@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RegTech365 proposal builder</title>
+<style>body{font-family:system-ui;max-width:820px;margin:2rem auto;padding:0 1rem}label{display:block;margin:6px 0}input:not([type=checkbox]),textarea{width:100%;box-sizing:border-box}fieldset{margin:1rem 0}.err{color:crimson}</style>
+<h1>RegTech365 proposal builder</h1><div id="app">Loading…</div>
+<script>
+const $=s=>document.querySelector(s);let S;
+const box=(name,items,cls)=>Object.entries(items).map(([k,l])=>`<label><input type="checkbox" name="${name}" value="${k}" ${k==='regcomply'?'checked':''}> ${l}</label>`).join('');
+fetch('/api/proxy?op=fields').then(r=>r.json()).then(s=>{S=s;
+ const groups=[...new Set(s.fields.map(f=>f.group))];
+ $('#app').innerHTML=`<h3>Modules in scope</h3>${box('mod',s.modules)}<h3>Remove optional slides</h3>${box('drop',s.droppable).replace(' checked','')}`+
+  groups.map(g=>`<fieldset><legend>${g}</legend>`+s.fields.filter(f=>f.group===g).map(f=>`<label>${f.label}${f.req?' *':''}${f.area?`<textarea rows=2 name="${f.key}">${f.def||''}</textarea>`:`<input name="${f.key}" value="${f.def||''}">`}</label>`).join('')+'</fieldset>').join('')+
+  `<button id="go">Generate proposal</button><p id="out"></p>`;
+ $('#go').onclick=generate;});
+async function generate(){
+ const out=$('#out');out.className='';
+ const fields={};S.fields.forEach(f=>fields[f.key]=document.querySelector(`[name="${f.key}"]`).value.trim());
+ const miss=S.fields.filter(f=>f.req&&!fields[f.key]);if(miss.length){out.className='err';out.textContent='Required: '+miss.map(f=>f.label).join(', ');return}
+ const pick=n=>[...document.querySelectorAll(`[name=${n}]:checked`)].map(x=>n==='drop'?+x.value:x.value);
+ $('#go').disabled=true;out.textContent='Generating… (first run can take ~30s while the server wakes)';
+ const r=await fetch('/api/proxy',{method:'POST',body:JSON.stringify({fields,modules:pick('mod'),dropSlides:pick('drop')})});
+ const j=await r.json().catch(()=>({detail:'Server error'}));$('#go').disabled=false;
+ if(r.ok)out.innerHTML=`<a href="${j.editUrl}" target="_blank">Open in Google Slides</a> · <a href="/api/proxy?op=pdf&id=${j.id}">Download PDF</a>`;
+ else{out.className='err';out.textContent=j.detail||'Failed'}}
+</script>
